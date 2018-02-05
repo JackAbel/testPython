@@ -1,0 +1,95 @@
+#!  /usr/bin/python
+# _*_ coding:utf-8 _*_
+import pipe
+
+
+# 函数中含有yield语句就是生成器函数
+def generaterEm():
+
+    yield 0
+    yield 1
+
+# 调用含有yield 语句的生成器函数将返回一个生成器
+em1 = generaterEm()
+
+# 生成器包含迭代器的全部特性，第一次调用它的next方法，直接遇到yield会暂时挂起，并会返回yield后面的值
+print(em1.next())
+print(em1.next())
+# *当调用next方法到生成器末尾（遇到空的 return 语句或者到函数体结尾）抛出StopIteration
+# print(em1.next())
+
+
+def freeze():
+    a = b = 1
+    yield a
+    yield b
+    while True:
+        a, b = b, a+b
+        yield b
+# 生成器函数每次执行时，函数体内的所有变量都freeze(封存)在生成器中，并且恢复执行时还原;
+# 类似于闭包，即使同一个生成器函数返回的生成器，封存的变量也是相互独立的;因为yield是延时计算的，不会造成死循环
+
+for num in freeze():
+    if num > 100:
+        break
+    print(num)
+
+# 生成器函数可以带参数
+
+
+def counter(start=0):
+    while True:
+        yield start
+        start += 1
+# 生函不能再写返回值，return None也不行
+""" try...finally 会确保释放资源，在finally中写yield呢 python会在真正离开try...finally语句块时执行finally中
+代码，暂停不算。
+"""
+
+
+def finally_yield():
+    a = 65
+    try:
+        yield a
+        yield 2
+    finally:
+        print('end')
+ #       yield 0
+for num in finally_yield():
+    print(num),
+n = finally_yield()
+print(n.next())
+# finally一定会被执行，无论生成器是否执行结束，finally 是被garbage collection运行
+# 生成器中用next() Exception RuntimeError: 'generator ignored GeneratorExit' 因为finally语句块遇到yield暂停了，没有真正离开
+print(finally_yield().next())
+
+# 在生成器函数体中加入另一个生成器；
+
+
+def generaterInGe():
+    yield 1
+    yield 2
+    for val in counter(10):
+        yield val
+""" 协同程序(协程)一般指这样的函数
+a、彼此有不同的局部变量、指令指针。但仍共享全局变量
+b、可以方便的挂起，恢复，有多个入口点和出口点
+c、多个协程协作运行，如A的运行过程中需要B的结果才能执行
+之间可以直接传递对象，而不需要考虑资源锁，就像内置了锁的线程，在非并发的，符合协程特点的程序中协程比线程方便
+
+send() 是除next()外另一个恢复生成器的方法
+"""
+
+
+def ge_send():
+    n = 0
+    while True:
+        n = (yield n)
+r = ge_send()
+r.next()
+# send传入非None值时生成器必须在挂起状态下，否则抛出异常，未启动的可以用None作为send参数
+r.send(10)
+print(r.next())     # *使用next恢复生成器，yield的值为None
+# close() 用于关闭生成器，再调用send或者next抛出StopIteration
+# throw(type, value=None, traceback=None):
+# 这个方法用于在生成器内部（生成器的当前挂起处，或未启动时在定义处）抛出一个异常。
